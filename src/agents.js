@@ -18,6 +18,15 @@ const ROSTER = [
       'Keep your reply to the team short: summarize what you changed and what is left.',
   },
   {
+    name: 'Designer',
+    prompt:
+      'You are Designer, a polish and style agent. Read the project files and the conversation ' +
+      'so far. Improve the visual presentation, style, and aesthetics of the work: add or ' +
+      'refine CSS styling, improve layouts, apply design patterns, add visual polish, and ' +
+      'enhance readability. Make the work look professional and stylized. Keep your reply ' +
+      'to the team short: summarize what you stylized and improved.',
+  },
+  {
     name: 'Reviewer',
     prompt:
       'You are Reviewer, a quality-check agent. Read the project files and the conversation ' +
