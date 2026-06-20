@@ -71,11 +71,10 @@ async function runAgentTurn(agentDef, cwd, transcript, projectBrief, thread) {
 function commitAndPushProject(projectName, projectPath) {
   try {
     const repoRoot = path.join(__dirname, '..');
-    const branchName = `project/${projectName}`;
     execSync('git add -A', { cwd: repoRoot });
     execSync(`git commit -m "Project: ${projectName}"`, { cwd: repoRoot });
-    execSync(`git push -u origin HEAD:${branchName} --force`, { cwd: repoRoot });
-    return `https://github.com/faiththediscordtechnician/aigang/tree/${branchName}/projects/${projectName}`;
+    execSync(`git push origin main`, { cwd: repoRoot });
+    return `https://aigang-production.up.railway.app/${projectName}`;
   } catch (err) {
     console.error('Failed to commit/push project:', err);
     return null;
@@ -99,9 +98,9 @@ async function runProject({ name, brief, postToThread, thread }) {
       await postToThread(`**${agentDef.name}:** ${truncate(reply)}`);
 
       if (reply.toUpperCase().includes('PROJECT COMPLETE') || reply.toUpperCase().includes('READY TO DEPLOY')) {
-        const ghLink = commitAndPushProject(name, cwd);
-        if (ghLink) {
-          await postToThread(`✅ Project committed to branch \`project/${name}\`\n${ghLink}`);
+        const deployUrl = commitAndPushProject(name, cwd);
+        if (deployUrl) {
+          await postToThread(`✅ Project deployed to Railway!\n${deployUrl}`);
         }
         return;
       }
