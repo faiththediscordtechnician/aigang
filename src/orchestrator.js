@@ -29,7 +29,7 @@ async function runAgentTurn(agentDef, cwd, transcript, projectBrief) {
         effort: 'low',
         systemPrompt: agentDef.prompt,
         tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep'],
-        permissionMode: 'bypassPermissions',
+        permissionMode: 'acceptEdits',
         maxTurns: 15,
         stderr: (data) => {
           stderrOutput += data;
