@@ -83,7 +83,7 @@ client.on('messageCreate', async (message) => {
     }
 
     const thread = message.channel;
-    if (!thread.isThread()) {
+    if (!thread.parent) {
       await message.reply('This command can only be used in a project thread.');
       return;
     }
