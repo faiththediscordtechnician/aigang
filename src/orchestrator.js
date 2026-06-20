@@ -20,28 +20,30 @@ async function runAgentTurn(agentDef, cwd, transcript, projectBrief) {
 
   let resultText = '';
   let stderrOutput = '';
-  for await (const message of query({
-    prompt,
-    options: {
-      cwd,
-      model: 'claude-haiku-4-5',
-      effort: 'low',
-      systemPrompt: agentDef.prompt,
-      tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep'],
-      permissionMode: 'bypassPermissions',
-      maxTurns: 15,
-      stderr: (data) => {
-        stderrOutput += data;
-        console.error(`[${agentDef.name} stderr]`, data);
+  try {
+    for await (const message of query({
+      prompt,
+      options: {
+        cwd,
+        model: 'claude-haiku-4-5',
+        effort: 'low',
+        systemPrompt: agentDef.prompt,
+        tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep'],
+        permissionMode: 'bypassPermissions',
+        maxTurns: 15,
+        stderr: (data) => {
+          stderrOutput += data;
+          console.error(`[${agentDef.name} stderr]`, data);
+        },
       },
-    },
-  })) {
-    if (message.type === 'result') {
-      resultText = message.subtype === 'success' ? message.result : `(error: ${message.subtype})`;
+    })) {
+      if (message.type === 'result') {
+        resultText = message.subtype === 'success' ? message.result : `(error: ${message.subtype})`;
+      }
     }
-  }
-  if (!resultText.trim() && stderrOutput.trim()) {
-    return `(process error)\n${stderrOutput.trim().slice(-1500)}`;
+  } catch (err) {
+    const detail = stderrOutput.trim() ? `\n${stderrOutput.trim().slice(-1500)}` : '';
+    return `(process error: ${err.message})${detail}`;
   }
   return resultText.trim() || '(no response)';
 }
