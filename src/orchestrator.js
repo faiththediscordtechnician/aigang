@@ -71,12 +71,22 @@ async function runAgentTurn(agentDef, cwd, transcript, projectBrief, thread) {
 function commitAndPushProject(projectName, projectPath) {
   try {
     const repoRoot = path.join(__dirname, '..');
+
+    // Ensure git is configured
+    try {
+      execSync('git config user.email', { cwd: repoRoot, stdio: 'pipe' });
+    } catch {
+      execSync('git config user.email "aigang-bot@railway.local"', { cwd: repoRoot });
+      execSync('git config user.name "aigang bot"', { cwd: repoRoot });
+    }
+
     execSync('git add -A', { cwd: repoRoot });
     execSync(`git commit -m "Project: ${projectName}"`, { cwd: repoRoot });
     execSync(`git push origin main`, { cwd: repoRoot });
+    console.log(`Successfully committed and pushed project ${projectName}`);
     return `https://aigang-production.up.railway.app/${projectName}`;
   } catch (err) {
-    console.error('Failed to commit/push project:', err);
+    console.error(`Failed to commit/push project ${projectName}:`, err.message);
     return null;
   }
 }
