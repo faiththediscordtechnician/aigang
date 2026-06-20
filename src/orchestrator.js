@@ -1,4 +1,6 @@
 const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
 const { query } = require('@anthropic-ai/claude-agent-sdk');
 const { ROSTER } = require('./agents');
 const { projectDir } = require('./projectPaths');
@@ -12,11 +14,28 @@ function truncate(text) {
     : text;
 }
 
-async function runAgentTurn(agentDef, cwd, transcript, projectBrief) {
+async function readThreadMessages(thread) {
+  if (!thread) return [];
+  try {
+    const messages = await thread.messages.fetch({ limit: 100 });
+    return messages
+      .reverse()
+      .filter((msg) => !msg.author.bot)
+      .map((msg) => `${msg.author.username}: ${msg.content}`)
+      .join('\n');
+  } catch (err) {
+    console.error('Failed to read thread messages:', err);
+    return '';
+  }
+}
+
+async function runAgentTurn(agentDef, cwd, transcript, projectBrief, thread) {
+  const userMessages = await readThreadMessages(thread);
+  const fullTranscript = userMessages ? `${transcript}\n---USER MESSAGES---\n${userMessages}` : transcript;
   const prompt =
     `Project brief: ${projectBrief}\n\n` +
-    `Conversation so far (most recent last):\n${transcript || '(nothing yet)'}\n\n` +
-    'Take your turn now.';
+    `Conversation so far (most recent last):\n${fullTranscript || '(nothing yet)'}\n\n` +
+    'Take your turn now. If there are new user messages above (after "---USER MESSAGES---"), read and respond to them.';
 
   let resultText = '';
   let stderrOutput = '';
@@ -49,23 +68,41 @@ async function runAgentTurn(agentDef, cwd, transcript, projectBrief) {
   return resultText.trim() || '(no response)';
 }
 
+function commitAndPushProject(projectName, projectPath) {
+  try {
+    const repoRoot = path.join(__dirname, '..');
+    const branchName = `project/${projectName}`;
+    execSync('git add -A', { cwd: repoRoot });
+    execSync(`git commit -m "Project: ${projectName}"`, { cwd: repoRoot });
+    execSync(`git push -u origin HEAD:${branchName} --force`, { cwd: repoRoot });
+    return `https://github.com/faiththediscordtechnician/aigang/tree/${branchName}/projects/${projectName}`;
+  } catch (err) {
+    console.error('Failed to commit/push project:', err);
+    return null;
+  }
+}
+
 /**
  * Runs a project's agent team in round-robin turns inside a Discord thread.
- * `postToThread` is called with each agent's reply so it can be relayed to Discord,
- * which is the coordination channel agents read from on their next turn.
+ * Agents read user messages from the thread and adjust their work dynamically.
+ * When PROJECT COMPLETE is signaled, commits the project to a git branch and posts a link.
  */
-async function runProject({ name, brief, postToThread }) {
+async function runProject({ name, brief, postToThread, thread }) {
   const cwd = projectDir(name);
   fs.mkdirSync(cwd, { recursive: true });
 
   let transcript = '';
   for (let round = 1; round <= MAX_ROUNDS; round += 1) {
     for (const agentDef of ROSTER) {
-      const reply = await runAgentTurn(agentDef, cwd, transcript, brief);
+      const reply = await runAgentTurn(agentDef, cwd, transcript, brief, thread);
       transcript += `\n${agentDef.name}: ${reply}\n`;
       await postToThread(`**${agentDef.name}:** ${truncate(reply)}`);
 
       if (reply.includes('PROJECT COMPLETE')) {
+        const ghLink = commitAndPushProject(name, cwd);
+        if (ghLink) {
+          await postToThread(`✅ Project committed to branch \`project/${name}\`\n${ghLink}`);
+        }
         return;
       }
     }

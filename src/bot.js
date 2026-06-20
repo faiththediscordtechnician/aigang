@@ -61,6 +61,7 @@ client.on('messageCreate', async (message) => {
       name,
       brief,
       postToThread: (text) => thread.send(text),
+      thread,
     });
   } catch (err) {
     console.error(err);
