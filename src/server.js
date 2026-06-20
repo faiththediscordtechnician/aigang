@@ -25,8 +25,8 @@ app.get('/', (req, res) => {
 });
 
 // Path routing: /projectname/* serves from projects/projectname/*
-app.use('/:projectName/*', (req, res) => {
-  const { projectName } = req.params;
+app.use('/:projectName/:path(.*)', (req, res) => {
+  const { projectName, path: filePath } = req.params;
 
   if (!isValidProjectName(projectName)) {
     return res.status(400).send('Invalid project name.');
@@ -40,26 +40,26 @@ app.use('/:projectName/*', (req, res) => {
   }
 
   // Build the requested file path within the project
-  let filePath = path.join(projectPath, req.params[0] || '');
+  let requestedFile = path.join(projectPath, filePath || '');
 
   // If requesting a directory or root, try index.html
-  if (fs.existsSync(filePath)) {
-    const stat = fs.statSync(filePath);
+  if (fs.existsSync(requestedFile)) {
+    const stat = fs.statSync(requestedFile);
     if (stat.isDirectory()) {
-      filePath = path.join(filePath, 'index.html');
+      requestedFile = path.join(requestedFile, 'index.html');
     }
   }
 
   // Security: ensure the resolved path is within the project directory
-  const resolved = path.resolve(filePath);
+  const resolved = path.resolve(requestedFile);
   if (!resolved.startsWith(path.resolve(projectPath))) {
     return res.status(403).send('Access denied.');
   }
 
-  if (fs.existsSync(filePath)) {
+  if (fs.existsSync(resolved)) {
     res.sendFile(resolved);
   } else {
-    res.status(404).send(`File not found: ${req.params[0]}`);
+    res.status(404).send(`File not found: ${filePath}`);
   }
 });
 
