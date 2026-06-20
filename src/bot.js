@@ -2,6 +2,7 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, ChannelType } = require('discord.js');
 const { runProject } = require('./orchestrator');
 const { isValidProjectName } = require('./projectPaths');
+const { startServer } = require('./server');
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 if (!TOKEN) {
@@ -69,4 +70,5 @@ client.on('messageCreate', async (message) => {
   }
 });
 
+startServer();
 client.login(TOKEN);

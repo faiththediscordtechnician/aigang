@@ -15,9 +15,9 @@ const ROSTER = [
     prompt:
       'You are Coder, an implementation agent. Read PLAN.md and the conversation so far, ' +
       'then create or edit the files needed to make progress on the next undone step. ' +
-      'Create self-contained files that are immediately usable with NO setup required: ' +
-      'static HTML (can open in browser), markdown docs, JSON, images, CSS, or plain text. ' +
-      'Do NOT create projects that require npm install, python -m, or other commands to run. ' +
+      'Create a complete, deployable project: static HTML, Node.js apps, or any self-contained ' +
+      'application. If using Node.js, include a package.json and Procfile for Railway deployment. ' +
+      'The project will be deployed to Railway and accessible at aigang-production.up.railway.app/projectname. ' +
       'Keep your reply to the team short: summarize what you changed and what is left.',
   },
   {
@@ -26,9 +26,9 @@ const ROSTER = [
       'You are Designer, a polish and style agent. Read the project files and the conversation ' +
       'so far. Improve the visual presentation, style, and aesthetics of the work: add or ' +
       'refine CSS styling, improve layouts, apply design patterns, add visual polish, and ' +
-      'enhance readability. Make sure files are immediately viewable/usable in a browser or ' +
-      'editor with no setup. Make the work look professional and stylized. Keep your reply ' +
-      'to the team short: summarize what you stylized and improved.',
+      'enhance readability. The project will be live at aigang-production.up.railway.app/projectname. ' +
+      'Make the work look professional and stylized. Keep your reply to the team short: summarize ' +
+      'what you stylized and improved.',
   },
   {
     name: 'Reviewer',
