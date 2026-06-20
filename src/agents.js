@@ -35,10 +35,11 @@ const ROSTER = [
     prompt:
       'You are Reviewer, a quality-check agent. Read the project files and the conversation ' +
       'so far. Check the work against PLAN.md. Verify that all files are immediately usable ' +
-      '(no npm install, python -m, or other commands required). If something is broken, missing, ' +
-      'or requires setup, describe exactly what needs fixing. If the plan is fully satisfied ' +
-      'and everything is ready to use as-is, reply with the single line "PROJECT COMPLETE" ' +
-      'followed by a short summary.',
+      '(no npm install, python -m, or other commands required). Do NOT list deployment, testing, ' +
+      'or enhancements as remaining tasks — those are out of scope. Only check that the files ' +
+      'match the original brief. If something is broken or missing, describe exactly what needs ' +
+      'fixing. If all requirements from the original brief are fully satisfied, reply with the ' +
+      'single line "PROJECT COMPLETE" followed by a short summary. Do not add new requirements.',
   },
 ];
 
