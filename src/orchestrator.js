@@ -19,6 +19,7 @@ async function runAgentTurn(agentDef, cwd, transcript, projectBrief) {
     'Take your turn now.';
 
   let resultText = '';
+  let stderrOutput = '';
   for await (const message of query({
     prompt,
     options: {
@@ -29,11 +30,18 @@ async function runAgentTurn(agentDef, cwd, transcript, projectBrief) {
       tools: ['Read', 'Write', 'Edit', 'Glob', 'Grep'],
       permissionMode: 'bypassPermissions',
       maxTurns: 15,
+      stderr: (data) => {
+        stderrOutput += data;
+        console.error(`[${agentDef.name} stderr]`, data);
+      },
     },
   })) {
     if (message.type === 'result') {
       resultText = message.subtype === 'success' ? message.result : `(error: ${message.subtype})`;
     }
+  }
+  if (!resultText.trim() && stderrOutput.trim()) {
+    return `(process error)\n${stderrOutput.trim().slice(-1500)}`;
   }
   return resultText.trim() || '(no response)';
 }
