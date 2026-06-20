@@ -25,8 +25,9 @@ app.get('/', (req, res) => {
 });
 
 // Path routing: /projectname/* serves from projects/projectname/*
-app.use('/:projectName/:path(.*)', (req, res) => {
-  const { projectName, path: filePath } = req.params;
+app.get(/^\/([^\/]+)\/(.*)$/, (req, res) => {
+  const projectName = req.params[0];
+  const filePath = req.params[1] || '';
 
   if (!isValidProjectName(projectName)) {
     return res.status(400).send('Invalid project name.');
@@ -60,6 +61,46 @@ app.use('/:projectName/:path(.*)', (req, res) => {
     res.sendFile(resolved);
   } else {
     res.status(404).send(`File not found: ${filePath}`);
+  }
+});
+
+// Match /projectname without trailing content
+app.get(/^\/([^\/]+)\/?$/, (req, res) => {
+  const projectName = req.params[0];
+
+  if (!isValidProjectName(projectName)) {
+    return res.status(400).send('Invalid project name.');
+  }
+
+  const projectPath = projectDir(projectName);
+
+  if (!fs.existsSync(projectPath)) {
+    return res.status(404).send(`Project "${projectName}" not found.`);
+  }
+
+  const indexPath = path.join(projectPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(path.resolve(indexPath));
+  } else {
+    fs.readdir(projectPath, (err, files) => {
+      if (err) {
+        return res.status(500).send('Could not read project.');
+      }
+      const links = files
+        .filter((f) => !f.startsWith('.'))
+        .map((f) => `<li><a href="/${projectName}/${f}">${f}</a></li>`)
+        .join('\n');
+      res.send(`
+        <html>
+          <body>
+            <h1>${projectName}</h1>
+            <ul>${links || '<li>Empty project</li>'}</ul>
+            <hr/>
+            <a href="/">Back to projects</a>
+          </body>
+        </html>
+      `);
+    });
   }
 });
 
