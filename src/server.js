@@ -7,8 +7,14 @@ const app = express();
 
 // Root endpoint: list all projects
 app.get('/', (req, res) => {
+  // Create projects directory if it doesn't exist
+  if (!fs.existsSync(PROJECTS_ROOT)) {
+    fs.mkdirSync(PROJECTS_ROOT, { recursive: true });
+  }
+
   fs.readdir(PROJECTS_ROOT, (err, files) => {
     if (err) {
+      console.error('Error reading projects:', err);
       return res.status(500).send('Could not list projects.');
     }
     const projects = files.filter((f) => isValidProjectName(f));
@@ -58,7 +64,12 @@ app.get(/^\/([^\/]+)\/(.*)$/, (req, res) => {
   }
 
   if (fs.existsSync(resolved)) {
-    res.sendFile(resolved);
+    res.sendFile(resolved, (err) => {
+      if (err) {
+        console.error('Error sending file:', err);
+        res.status(500).send('Error sending file.');
+      }
+    });
   } else {
     res.status(404).send(`File not found: ${filePath}`);
   }
@@ -80,7 +91,13 @@ app.get(/^\/([^\/]+)\/?$/, (req, res) => {
 
   const indexPath = path.join(projectPath, 'index.html');
   if (fs.existsSync(indexPath)) {
-    res.sendFile(path.resolve(indexPath));
+    res.sendFile(path.resolve(indexPath), (err) => {
+      if (err) {
+        console.error('Error sending index.html:', err);
+        res.status(500).send('Error sending file.');
+      }
+    });
+    return;
   } else {
     fs.readdir(projectPath, (err, files) => {
       if (err) {
@@ -104,11 +121,22 @@ app.get(/^\/([^\/]+)\/?$/, (req, res) => {
   }
 });
 
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Express error:', err);
+  res.status(500).send('Server error.');
+});
+
 const PORT = process.env.PORT || 3000;
 
 function startServer() {
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`HTTP server listening on port ${PORT}`);
+  });
+
+  server.on('error', (err) => {
+    console.error('Server error:', err);
+    process.exit(1);
   });
 }
 
