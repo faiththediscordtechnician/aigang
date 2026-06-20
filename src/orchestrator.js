@@ -98,7 +98,7 @@ async function runProject({ name, brief, postToThread, thread }) {
       transcript += `\n${agentDef.name}: ${reply}\n`;
       await postToThread(`**${agentDef.name}:** ${truncate(reply)}`);
 
-      if (reply.includes('PROJECT COMPLETE')) {
+      if (reply.toUpperCase().includes('PROJECT COMPLETE') || reply.toUpperCase().includes('READY TO DEPLOY')) {
         const ghLink = commitAndPushProject(name, cwd);
         if (ghLink) {
           await postToThread(`✅ Project committed to branch \`project/${name}\`\n${ghLink}`);
