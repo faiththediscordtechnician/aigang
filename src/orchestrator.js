@@ -1,9 +1,36 @@
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
-const { query } = require('@anthropic-ai/claude-agent-sdk');
-const { ROSTER } = require('./agents');
-const { projectDir } = require('./projectPaths');
+async function getProjectFiles(projectPath) {
+  try {
+    const files = [];
+    const walk = (dir, prefix = '') => {
+      const entries = fs.readdirSync(dir);
+      for (const entry of entries) {
+        if (entry.startsWith('.')) continue;
+        const fullPath = path.join(dir, entry);
+        const stat = fs.statSync(fullPath);
+        const relPath = prefix ? `${prefix}/${entry}` : entry;
+        if (stat.isFile()) {
+          files.push(relPath);
+        } else if (stat.isDirectory()) {
+          walk(fullPath, relPath);
+        }
+      }
+    };
+    walk(projectPath);
+    return files;
+  } catch (err) {
+    console.error('Error getting project files:', err);
+    return [];
+  }
+}
+
+function formatFileLinks(projectName, files) {
+  if (files.length === 0) return '';
+  const links = files
+    .slice(0, 10) // Limit to first 10 files
+    .map((f) => `[${f}](https://aigang-production.up.railway.app/${projectName}/${f})`)
+    .join(' • ');
+  return `\n📁 Files: ${links}${files.length > 10 ? ` (+${files.length - 10} more)` : ''}`;
+}
 
 const MAX_ROUNDS = 4;
 const DISCORD_MESSAGE_LIMIT = 1900;
@@ -108,9 +135,11 @@ async function runProject({ name, brief, postToThread, thread }) {
       await postToThread(`**${agentDef.name}:** ${truncate(reply)}`);
 
       if (reply.toUpperCase().includes('PROJECT COMPLETE') || reply.toUpperCase().includes('READY TO DEPLOY')) {
+        const files = await getProjectFiles(cwd);
         const deployUrl = commitAndPushProject(name, cwd);
+        const fileLinks = formatFileLinks(name, files);
         if (deployUrl) {
-          await postToThread(`✅ Project deployed to Railway!\n${deployUrl}`);
+          await postToThread(`✅ Project deployed to Railway!\n${deployUrl}${fileLinks}`);
         }
         return;
       }
