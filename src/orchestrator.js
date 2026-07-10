@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const { execSync } = require('child_process');
+const simpleGit = require('simple-git');
 const { projectDir } = require('./projectPaths');
 const { query } = require('@anthropic-ai/claude-agent-sdk');
 const { ROSTER } = require('./agents');
@@ -102,21 +102,22 @@ async function runAgentTurn(agentDef, cwd, transcript, projectBrief, thread) {
   return resultText.trim() || '(no response)';
 }
 
-function commitAndPushProject(projectName, projectPath) {
+async function commitAndPushProject(projectName, projectPath) {
   try {
     const repoRoot = path.join(__dirname, '..');
+    const git = simpleGit(repoRoot);
 
-    // Ensure git is configured
+    // Configure git if needed
     try {
-      execSync('git config user.email', { cwd: repoRoot, stdio: 'pipe' });
+      await git.getConfig('user.email');
     } catch {
-      execSync('git config user.email "aigang-bot@railway.local"', { cwd: repoRoot });
-      execSync('git config user.name "aigang bot"', { cwd: repoRoot });
+      await git.addConfig('user.email', 'aigang-bot@railway.local');
+      await git.addConfig('user.name', 'aigang bot');
     }
 
-    execSync('git add -A', { cwd: repoRoot });
-    execSync(`git commit -m "Project: ${projectName}"`, { cwd: repoRoot });
-    execSync(`git push origin main`, { cwd: repoRoot });
+    await git.add(['.']);
+    await git.commit(`Project: ${projectName}`);
+    await git.push('origin', 'main');
     console.log(`Successfully committed and pushed project ${projectName}`);
     return `https://aigang-production.up.railway.app/${projectName}`;
   } catch (err) {
@@ -143,7 +144,7 @@ async function runProject({ name, brief, postToThread, thread }) {
 
       if (reply.toUpperCase().includes('PROJECT COMPLETE') || reply.toUpperCase().includes('READY TO DEPLOY')) {
         const files = await getProjectFiles(cwd);
-        const deployUrl = commitAndPushProject(name, cwd);
+        const deployUrl = await commitAndPushProject(name, cwd);
         const fileLinks = formatFileLinks(name, files);
         if (deployUrl) {
           await postToThread(`✅ Project deployed to Railway!\n${deployUrl}${fileLinks}`);
