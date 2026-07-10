@@ -1,3 +1,10 @@
+const path = require('path');
+const fs = require('fs');
+const { execSync } = require('child_process');
+const { projectDir } = require('./projectPaths');
+const { query } = require('@anthropic-ai/claude-agent-sdk');
+const { ROSTER } = require('./agents');
+
 async function getProjectFiles(projectPath) {
   try {
     const files = [];
